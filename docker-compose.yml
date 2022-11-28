@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+  web-ui:
+    build: web-ui
+    environment:
+      NODE_ENV: ${ENVIRONMENT}
+    ports:
+      - "80:80"
+
+  api:
+    build:
+      context: Api
+      dockerfile: Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ENVIRONMENT}
+    ports:
+      - "81:80"
+
+  db-sql:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - db-sql-data:/var/lib/postgresql/data
+
+  db-sql-admin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "82:80"
+    depends_on:
+      - db-sql
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${DATABASE_ADMIN_USERNAME}
+      PGADMIN_DEFAULT_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+    volumes:
+      - db-sql-admin-conf:/var/lib/pgadmin
+      - db-sql-admin-servers:/pgadmin4/servers.json
+
+  db-nosql:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DATABASE_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+
+  db-nosql-admin:
+    image: mongo-express:latest
+    depends_on:
+      - db-nosql
+    ports:
+      - "83:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${DATABASE_ADMIN_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@db-nosql:27017/
+    volumes:
+      - db-nosql-data:/data/db
+
+
+volumes:
+  db-sql-admin-conf:
+  db-sql-admin-servers:
+  db-sql-data:
+  db-nosql-data:
